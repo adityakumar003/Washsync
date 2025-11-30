@@ -51,11 +51,22 @@ export const machinesAPI = {
 
 // Admin API
 export const adminAPI = {
-    addMachine: (name) => api.post('/admin/machines', { name }),
+    addMachine: (name, branchId) => api.post('/admin/machines', { name, branchId }),
     deleteMachine: (id) => api.delete(`/admin/machines/${id}`),
     updateStatus: (id, status) => api.patch(`/admin/machines/${id}/status`, { status }),
     getUsers: () => api.get('/admin/users'),
     overrideMachine: (id) => api.post(`/admin/machines/${id}/override`),
+    assignUserBranch: (userId, branchId) => api.patch(`/admin/users/${userId}/branch`, { branchId }),
+};
+
+// Branches API
+export const branchesAPI = {
+    getAll: () => api.get('/branches'),
+    getActive: () => api.get('/branches/active'),
+    getOne: (id) => api.get(`/branches/${id}`),
+    create: (data) => api.post('/branches', data),
+    update: (id, data) => api.patch(`/branches/${id}`, data),
+    delete: (id) => api.delete(`/branches/${id}`),
 };
 
 // Notifications API

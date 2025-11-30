@@ -7,9 +7,25 @@ const { auth } = require('../middleware/auth');
 // Get all machines
 router.get('/', auth, async (req, res) => {
     try {
-        const machines = await Machine.find()
+        let query = {};
+
+        // Regular users can only see machines from their branch
+        if (!req.user.isAdmin) {
+            if (!req.user.branch) {
+                return res.status(400).json({ error: 'You are not assigned to any branch. Please contact admin.' });
+            }
+            query.branch = req.user.branch;
+        } else {
+            // Admin can filter by branch or see all
+            if (req.query.branchId) {
+                query.branch = req.query.branchId;
+            }
+        }
+
+        const machines = await Machine.find(query)
             .populate('currentUser', 'name email')
             .populate('queue.user', 'name email')
+            .populate('branch', 'name code')
             .sort({ name: 1 });
 
         res.json(machines);
@@ -24,10 +40,16 @@ router.get('/:id', auth, async (req, res) => {
     try {
         const machine = await Machine.findById(req.params.id)
             .populate('currentUser', 'name email')
-            .populate('queue.user', 'name email');
+            .populate('queue.user', 'name email')
+            .populate('branch', 'name code');
 
         if (!machine) {
             return res.status(404).json({ error: 'Machine not found' });
+        }
+
+        // Regular users can only access machines from their branch
+        if (!req.user.isAdmin && machine.branch._id.toString() !== req.user.branch?.toString()) {
+            return res.status(403).json({ error: 'Access denied. This machine belongs to a different branch.' });
         }
 
         res.json(machine);
@@ -46,10 +68,15 @@ router.post('/:id/occupy', auth, async (req, res) => {
             return res.status(400).json({ error: 'Invalid duration. Must be between 1 and 180 minutes.' });
         }
 
-        const machine = await Machine.findById(req.params.id);
+        const machine = await Machine.findById(req.params.id).populate('branch', 'name');
 
         if (!machine) {
             return res.status(404).json({ error: 'Machine not found' });
+        }
+
+        // Verify user is in the same branch as the machine
+        if (!req.user.isAdmin && machine.branch._id.toString() !== req.user.branch?.toString()) {
+            return res.status(403).json({ error: 'You can only use machines in your assigned branch.' });
         }
 
         if (machine.status === 'Maintenance') {
@@ -58,6 +85,39 @@ router.post('/:id/occupy', auth, async (req, res) => {
 
         if (machine.status === 'InUse') {
             return res.status(400).json({ error: 'Machine is currently in use' });
+        }
+
+        // Check if user is currently using ANY other machine
+        const userCurrentlyUsing = await Machine.findOne({
+            currentUser: req.userId,
+            status: 'InUse',
+            branch: req.user.branch
+        });
+
+        if (userCurrentlyUsing) {
+            return res.status(400).json({
+                error: `You are currently using "${userCurrentlyUsing.name}". Please finish or release it first.`
+            });
+        }
+
+        // Check if user is in queue for ANY other machine
+        const userInOtherQueue = await Machine.findOne({
+            _id: { $ne: req.params.id }, // Not this machine
+            'queue.user': req.userId,
+            branch: req.user.branch
+        });
+
+        if (userInOtherQueue) {
+            return res.status(400).json({
+                error: `You are in the queue for "${userInOtherQueue.name}". Please leave that queue first.`
+            });
+        }
+
+        // Remove user from queue if they were in it for THIS machine
+        const wasInQueue = machine.queue.some(item => item.user.toString() === req.userId.toString());
+        if (wasInQueue) {
+            machine.queue = machine.queue.filter(item => item.user.toString() !== req.userId.toString());
+            console.log(`User ${req.userId} removed from queue for machine ${machine.name}`);
         }
 
         // Set machine to in use
@@ -71,6 +131,7 @@ router.post('/:id/occupy', auth, async (req, res) => {
 
         // Populate and return
         await machine.populate('currentUser', 'name email');
+        await machine.populate('queue.user', 'name email');
 
         res.json({
             message: 'Machine occupied successfully',
@@ -118,6 +179,10 @@ router.post('/:id/release', auth, async (req, res) => {
                 type: 'your_turn',
                 machineId: machine._id
             });
+
+            // Remove them from queue since machine is available
+            machine.queue.shift();
+            await machine.save();
         }
 
         res.json({
@@ -133,10 +198,15 @@ router.post('/:id/release', auth, async (req, res) => {
 // Join queue
 router.post('/:id/queue/join', auth, async (req, res) => {
     try {
-        const machine = await Machine.findById(req.params.id);
+        const machine = await Machine.findById(req.params.id).populate('branch', 'name');
 
         if (!machine) {
             return res.status(404).json({ error: 'Machine not found' });
+        }
+
+        // Verify user is in the same branch as the machine
+        if (!req.user.isAdmin && machine.branch._id.toString() !== req.user.branch?.toString()) {
+            return res.status(403).json({ error: 'You can only join queues for machines in your assigned branch.' });
         }
 
         if (machine.status === 'Maintenance') {
@@ -147,10 +217,11 @@ router.post('/:id/queue/join', auth, async (req, res) => {
             return res.status(400).json({ error: 'You are currently using this machine' });
         }
 
-        // Check if user is currently using ANY machine
+        // Check if user is currently using ANY machine in their branch
         const userCurrentlyUsing = await Machine.findOne({
             currentUser: req.userId,
-            status: 'InUse'
+            status: 'InUse',
+            branch: req.user.branch
         });
 
         if (userCurrentlyUsing) {
@@ -159,13 +230,20 @@ router.post('/:id/queue/join', auth, async (req, res) => {
             });
         }
 
-        // Check if already in queue
-        const alreadyInQueue = machine.queue.some(
-            item => item.user.toString() === req.userId.toString()
-        );
+        // Check if user is already in queue for ANY machine (including this one)
+        const userInAnyQueue = await Machine.findOne({
+            'queue.user': req.userId,
+            branch: req.user.branch
+        });
 
-        if (alreadyInQueue) {
-            return res.status(400).json({ error: 'You are already in the queue' });
+        if (userInAnyQueue) {
+            if (userInAnyQueue._id.toString() === req.params.id) {
+                return res.status(400).json({ error: 'You are already in the queue for this machine' });
+            } else {
+                return res.status(400).json({
+                    error: `You are already in the queue for "${userInAnyQueue.name}". Please leave that queue first.`
+                });
+            }
         }
 
         // Add to queue

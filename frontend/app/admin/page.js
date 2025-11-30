@@ -3,17 +3,22 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { adminAPI, machinesAPI } from '@/lib/api';
-import { ArrowLeft, Plus, Trash2, Wrench, Users, Shield, Loader } from 'lucide-react';
+import { adminAPI, machinesAPI, branchesAPI } from '@/lib/api';
+import { ArrowLeft, Plus, Trash2, Wrench, Users, Shield, Loader, MapPin, Building2 } from 'lucide-react';
 
 export default function AdminPage() {
     const router = useRouter();
     const { user, loading: authLoading } = useAuth();
     const [machines, setMachines] = useState([]);
     const [users, setUsers] = useState([]);
+    const [branches, setBranches] = useState([]);
     const [loading, setLoading] = useState(true);
     const [newMachineName, setNewMachineName] = useState('');
+    const [selectedBranchForMachine, setSelectedBranchForMachine] = useState('');
     const [showAddForm, setShowAddForm] = useState(false);
+    const [showBranchForm, setShowBranchForm] = useState(false);
+    const [newBranch, setNewBranch] = useState({ name: '', location: '', code: '' });
+    const [activeTab, setActiveTab] = useState('machines'); // 'machines' or 'branches'
 
     useEffect(() => {
         if (!authLoading) {
@@ -29,12 +34,14 @@ export default function AdminPage() {
 
     const fetchData = async () => {
         try {
-            const [machinesRes, usersRes] = await Promise.all([
+            const [machinesRes, usersRes, branchesRes] = await Promise.all([
                 machinesAPI.getAll(),
-                adminAPI.getUsers()
+                adminAPI.getUsers(),
+                branchesAPI.getAll()
             ]);
             setMachines(machinesRes.data);
             setUsers(usersRes.data);
+            setBranches(branchesRes.data);
         } catch (error) {
             console.error('Failed to fetch data:', error);
         } finally {
@@ -45,14 +52,36 @@ export default function AdminPage() {
     const handleAddMachine = async (e) => {
         e.preventDefault();
         if (!newMachineName.trim()) return;
+        if (!selectedBranchForMachine) {
+            alert('Please select a branch');
+            return;
+        }
 
         try {
-            await adminAPI.addMachine(newMachineName);
+            await adminAPI.addMachine(newMachineName, selectedBranchForMachine);
             setNewMachineName('');
+            setSelectedBranchForMachine('');
             setShowAddForm(false);
             fetchData();
         } catch (error) {
             alert(error.response?.data?.error || 'Failed to add machine');
+        }
+    };
+
+    const handleAddBranch = async (e) => {
+        e.preventDefault();
+        if (!newBranch.name.trim() || !newBranch.location.trim() || !newBranch.code.trim()) {
+            alert('All fields are required');
+            return;
+        }
+
+        try {
+            await branchesAPI.create(newBranch);
+            setNewBranch({ name: '', location: '', code: '' });
+            setShowBranchForm(false);
+            fetchData();
+        } catch (error) {
+            alert(error.response?.data?.error || 'Failed to add branch');
         }
     };
 
@@ -64,6 +93,17 @@ export default function AdminPage() {
             fetchData();
         } catch (error) {
             alert(error.response?.data?.error || 'Failed to delete machine');
+        }
+    };
+
+    const handleDeleteBranch = async (id, name) => {
+        if (!confirm(`Are you sure you want to delete "${name}"? This will fail if there are machines or users assigned to this branch.`)) return;
+
+        try {
+            await branchesAPI.delete(id);
+            fetchData();
+        } catch (error) {
+            alert(error.response?.data?.error || 'Failed to delete branch');
         }
     };
 
@@ -123,113 +163,310 @@ export default function AdminPage() {
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {/* Tabs */}
+                <div className="flex gap-4 mb-6">
+                    <button
+                        onClick={() => setActiveTab('machines')}
+                        className={`px-6 py-3 rounded-lg font-medium transition-all ${activeTab === 'machines'
+                                ? 'bg-primary-600 text-white shadow-lg'
+                                : 'bg-white/10 text-white hover:bg-white/20'
+                            }`}
+                    >
+                        <Wrench className="w-5 h-5 inline mr-2" />
+                        Machines
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('branches')}
+                        className={`px-6 py-3 rounded-lg font-medium transition-all ${activeTab === 'branches'
+                                ? 'bg-primary-600 text-white shadow-lg'
+                                : 'bg-white/10 text-white hover:bg-white/20'
+                            }`}
+                    >
+                        <Building2 className="w-5 h-5 inline mr-2" />
+                        Branches ({branches.length})
+                    </button>
+                </div>
+
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Machines Management */}
+                    {/* Main Content Area */}
                     <div className="lg:col-span-2">
-                        <div className="card mb-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-2xl font-bold text-gray-800">Machines</h2>
-                                <button
-                                    onClick={() => setShowAddForm(!showAddForm)}
-                                    className="btn btn-primary text-sm"
-                                >
-                                    <Plus className="w-4 h-4 inline mr-1" />
-                                    Add Machine
-                                </button>
-                            </div>
+                        {activeTab === 'machines' ? (
+                            <div className="card mb-6">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-2xl font-bold text-gray-800">Machines</h2>
+                                    <button
+                                        onClick={() => setShowAddForm(!showAddForm)}
+                                        className="btn btn-primary text-sm"
+                                        disabled={branches.length === 0}
+                                    >
+                                        <Plus className="w-4 h-4 inline mr-1" />
+                                        Add Machine
+                                    </button>
+                                </div>
 
-                            {showAddForm && (
-                                <form onSubmit={handleAddMachine} className="mb-6 p-4 bg-gray-50 rounded-lg">
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            value={newMachineName}
-                                            onChange={(e) => setNewMachineName(e.target.value)}
-                                            placeholder="Machine name (e.g., Washer A)"
-                                            className="input flex-1"
-                                            required
-                                        />
-                                        <button type="submit" className="btn btn-success">
-                                            Add
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setShowAddForm(false);
-                                                setNewMachineName('');
-                                            }}
-                                            className="btn btn-secondary"
-                                        >
-                                            Cancel
-                                        </button>
+                                {branches.length === 0 && (
+                                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                                        <p className="text-yellow-800 text-sm">
+                                            ⚠️ Please create a branch first before adding machines.
+                                        </p>
                                     </div>
-                                </form>
-                            )}
+                                )}
 
-                            <div className="space-y-3">
-                                {machines.length === 0 ? (
-                                    <p className="text-gray-600 text-center py-8">No machines yet. Add your first machine!</p>
-                                ) : (
-                                    machines.map((machine) => (
-                                        <div
-                                            key={machine._id}
-                                            className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                                        >
-                                            <div className="flex-1">
-                                                <h3 className="font-bold text-gray-800">{machine.name}</h3>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <span className={`status-badge ${machine.status === 'Available' ? 'status-available' :
-                                                            machine.status === 'InUse' ? 'status-inuse' :
-                                                                'status-maintenance'
-                                                        }`}>
-                                                        {machine.status}
-                                                    </span>
-                                                    {machine.currentUser && (
-                                                        <span className="text-sm text-gray-600">
-                                                            User: {machine.currentUser.name}
-                                                        </span>
-                                                    )}
-                                                    {machine.queue?.length > 0 && (
-                                                        <span className="text-sm text-gray-600">
-                                                            Queue: {machine.queue.length}
-                                                        </span>
-                                                    )}
-                                                </div>
+                                {showAddForm && (
+                                    <form onSubmit={handleAddMachine} className="mb-6 p-4 bg-gray-50 rounded-lg">
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Branch
+                                                </label>
+                                                <select
+                                                    value={selectedBranchForMachine}
+                                                    onChange={(e) => setSelectedBranchForMachine(e.target.value)}
+                                                    className="input w-full"
+                                                    required
+                                                >
+                                                    <option value="">Select a branch</option>
+                                                    {branches.map((branch) => (
+                                                        <option key={branch._id} value={branch._id}>
+                                                            {branch.name} ({branch.code})
+                                                        </option>
+                                                    ))}
+                                                </select>
                                             </div>
-
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={() => handleToggleMaintenance(machine)}
-                                                    className={`btn text-sm ${machine.status === 'Maintenance' ? 'btn-success' : 'btn-warning'
-                                                        }`}
-                                                    title={machine.status === 'Maintenance' ? 'Mark Available' : 'Mark Maintenance'}
-                                                >
-                                                    <Wrench className="w-4 h-4" />
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Machine Name
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={newMachineName}
+                                                    onChange={(e) => setNewMachineName(e.target.value)}
+                                                    placeholder="e.g., Washer A"
+                                                    className="input w-full"
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button type="submit" className="btn btn-success flex-1">
+                                                    Add Machine
                                                 </button>
-
-                                                {machine.status === 'InUse' && (
-                                                    <button
-                                                        onClick={() => handleOverride(machine._id, machine.name)}
-                                                        className="btn btn-secondary text-sm"
-                                                        title="Force Release"
-                                                    >
-                                                        Override
-                                                    </button>
-                                                )}
-
                                                 <button
-                                                    onClick={() => handleDeleteMachine(machine._id, machine.name)}
-                                                    className="btn btn-danger text-sm"
-                                                    title="Delete Machine"
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setShowAddForm(false);
+                                                        setNewMachineName('');
+                                                        setSelectedBranchForMachine('');
+                                                    }}
+                                                    className="btn btn-secondary"
                                                 >
-                                                    <Trash2 className="w-4 h-4" />
+                                                    Cancel
                                                 </button>
                                             </div>
                                         </div>
-                                    ))
+                                    </form>
                                 )}
+
+                                <div className="space-y-3">
+                                    {machines.length === 0 ? (
+                                        <p className="text-gray-600 text-center py-8">No machines yet. Add your first machine!</p>
+                                    ) : (
+                                        machines.map((machine) => (
+                                            <div
+                                                key={machine._id}
+                                                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                                            >
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <h3 className="font-bold text-gray-800">{machine.name}</h3>
+                                                        {machine.branch && (
+                                                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                                                                {machine.branch.name}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <span className={`status-badge ${machine.status === 'Available' ? 'status-available' :
+                                                            machine.status === 'InUse' ? 'status-inuse' :
+                                                                'status-maintenance'
+                                                            }`}>
+                                                            {machine.status}
+                                                        </span>
+                                                        {machine.currentUser && (
+                                                            <span className="text-sm text-gray-600">
+                                                                User: {machine.currentUser.name}
+                                                            </span>
+                                                        )}
+                                                        {machine.queue?.length > 0 && (
+                                                            <span className="text-sm text-gray-600">
+                                                                Queue: {machine.queue.length}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => handleToggleMaintenance(machine)}
+                                                        className={`btn text-sm ${machine.status === 'Maintenance' ? 'btn-success' : 'btn-warning'
+                                                            }`}
+                                                        title={machine.status === 'Maintenance' ? 'Mark Available' : 'Mark Maintenance'}
+                                                    >
+                                                        <Wrench className="w-4 h-4" />
+                                                    </button>
+
+                                                    {machine.status === 'InUse' && (
+                                                        <button
+                                                            onClick={() => handleOverride(machine._id, machine.name)}
+                                                            className="btn btn-secondary text-sm"
+                                                            title="Force Release"
+                                                        >
+                                                            Override
+                                                        </button>
+                                                    )}
+
+                                                    <button
+                                                        onClick={() => handleDeleteMachine(machine._id, machine.name)}
+                                                        className="btn btn-danger text-sm"
+                                                        title="Delete Machine"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        ) : (
+                            <div className="card mb-6">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-2xl font-bold text-gray-800">Branches</h2>
+                                    <button
+                                        onClick={() => setShowBranchForm(!showBranchForm)}
+                                        className="btn btn-primary text-sm"
+                                    >
+                                        <Plus className="w-4 h-4 inline mr-1" />
+                                        Add Branch
+                                    </button>
+                                </div>
+
+                                {showBranchForm && (
+                                    <form onSubmit={handleAddBranch} className="mb-6 p-4 bg-gray-50 rounded-lg">
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Branch Name
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={newBranch.name}
+                                                    onChange={(e) => setNewBranch({ ...newBranch, name: e.target.value })}
+                                                    placeholder="e.g., Downtown Branch"
+                                                    className="input w-full"
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Location
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={newBranch.location}
+                                                    onChange={(e) => setNewBranch({ ...newBranch, location: e.target.value })}
+                                                    placeholder="e.g., 123 Main St, City"
+                                                    className="input w-full"
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Branch Code
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={newBranch.code}
+                                                    onChange={(e) => setNewBranch({ ...newBranch, code: e.target.value.toUpperCase() })}
+                                                    placeholder="e.g., DT"
+                                                    className="input w-full"
+                                                    maxLength={10}
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button type="submit" className="btn btn-success flex-1">
+                                                    Add Branch
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setShowBranchForm(false);
+                                                        setNewBranch({ name: '', location: '', code: '' });
+                                                    }}
+                                                    className="btn btn-secondary"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                )}
+
+                                <div className="space-y-3">
+                                    {branches.length === 0 ? (
+                                        <p className="text-gray-600 text-center py-8">No branches yet. Add your first branch!</p>
+                                    ) : (
+                                        branches.map((branch) => (
+                                            <div
+                                                key={branch._id}
+                                                className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                                            >
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <Building2 className="w-5 h-5 text-primary-600" />
+                                                            <h3 className="font-bold text-gray-800">{branch.name}</h3>
+                                                            <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded font-mono">
+                                                                {branch.code}
+                                                            </span>
+                                                            {!branch.isActive && (
+                                                                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
+                                                                    Inactive
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
+                                                            <MapPin className="w-4 h-4" />
+                                                            {branch.location}
+                                                        </div>
+                                                        {branch.stats && (
+                                                            <div className="flex gap-4 text-sm">
+                                                                <span className="text-gray-600">
+                                                                    🟢 {branch.stats.availableMachines} Available
+                                                                </span>
+                                                                <span className="text-gray-600">
+                                                                    🟡 {branch.stats.inUseMachines} In Use
+                                                                </span>
+                                                                <span className="text-gray-600">
+                                                                    👥 {branch.stats.totalUsers} Users
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleDeleteBranch(branch._id, branch.name)}
+                                                        className="btn btn-danger text-sm"
+                                                        title="Delete Branch"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Users List */}
@@ -251,6 +488,11 @@ export default function AdminPage() {
                                             {u.isAdmin && <span className="text-yellow-500">👑</span>}
                                         </div>
                                         <div className="text-sm text-gray-600">{u.email}</div>
+                                        {u.branch && (
+                                            <div className="text-xs text-blue-600 mt-1">
+                                                📍 {u.branch.name}
+                                            </div>
+                                        )}
                                         <div className="text-xs text-gray-500 mt-1">
                                             Joined: {new Date(u.createdAt).toLocaleDateString()}
                                         </div>

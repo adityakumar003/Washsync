@@ -7,20 +7,33 @@ const { auth, isAdmin } = require('../middleware/auth');
 // Add new machine (Admin only)
 router.post('/machines', auth, isAdmin, async (req, res) => {
     try {
-        const { name } = req.body;
+        const { name, branchId } = req.body;
 
         if (!name) {
             return res.status(400).json({ error: 'Machine name is required' });
         }
 
-        // Check if machine already exists
-        const existing = await Machine.findOne({ name });
-        if (existing) {
-            return res.status(400).json({ error: 'Machine with this name already exists' });
+        if (!branchId) {
+            return res.status(400).json({ error: 'Branch is required' });
         }
 
-        const machine = new Machine({ name });
+        // Check if branch exists
+        const Branch = require('../models/Branch');
+        const branch = await Branch.findById(branchId);
+        if (!branch) {
+            return res.status(400).json({ error: 'Invalid branch' });
+        }
+
+        // Check if machine already exists in this branch
+        const existing = await Machine.findOne({ name, branch: branchId });
+        if (existing) {
+            return res.status(400).json({ error: 'Machine with this name already exists in this branch' });
+        }
+
+        const machine = new Machine({ name, branch: branchId });
         await machine.save();
+
+        await machine.populate('branch', 'name code');
 
         res.status(201).json({
             message: 'Machine added successfully',
@@ -91,12 +104,55 @@ router.patch('/machines/:id/status', auth, isAdmin, async (req, res) => {
 // Get all users (Admin only)
 router.get('/users', auth, isAdmin, async (req, res) => {
     try {
-        const users = await User.find().select('-password').sort({ createdAt: -1 });
+        const users = await User.find()
+            .select('-password')
+            .populate('branch', 'name code')
+            .sort({ createdAt: -1 });
 
         res.json(users);
     } catch (error) {
         console.error('Get users error:', error);
         res.status(500).json({ error: 'Failed to fetch users' });
+    }
+});
+
+// Assign user to branch (Admin only)
+router.patch('/users/:id/branch', auth, isAdmin, async (req, res) => {
+    try {
+        const { branchId } = req.body;
+
+        if (!branchId) {
+            return res.status(400).json({ error: 'Branch ID is required' });
+        }
+
+        // Check if branch exists
+        const Branch = require('../models/Branch');
+        const branch = await Branch.findById(branchId);
+        if (!branch) {
+            return res.status(400).json({ error: 'Invalid branch' });
+        }
+
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        if (user.isAdmin) {
+            return res.status(400).json({ error: 'Cannot assign branch to admin users' });
+        }
+
+        user.branch = branchId;
+        await user.save();
+
+        await user.populate('branch', 'name code');
+
+        res.json({
+            message: 'User branch updated successfully',
+            user
+        });
+    } catch (error) {
+        console.error('Update user branch error:', error);
+        res.status(500).json({ error: 'Failed to update user branch' });
     }
 });
 

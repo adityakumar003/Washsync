@@ -4,8 +4,12 @@ const machineSchema = new mongoose.Schema({
     name: {
         type: String,
         required: [true, 'Machine name is required'],
-        trim: true,
-        unique: true
+        trim: true
+    },
+    branch: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Branch',
+        required: [true, 'Branch is required']
     },
     status: {
         type: String,
@@ -43,6 +47,11 @@ const machineSchema = new mongoose.Schema({
 }, {
     timestamps: true
 });
+
+// Compound unique index: machine name must be unique within a branch
+machineSchema.index({ name: 1, branch: 1 }, { unique: true });
+// Index for faster branch-based queries
+machineSchema.index({ branch: 1, status: 1 });
 
 // Method to check if timer has expired
 machineSchema.methods.isTimerExpired = function () {

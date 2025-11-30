@@ -1,0 +1,44 @@
+// Assign user to branch (Admin only)
+router.patch('/users/:id/branch', auth, isAdmin, async (req, res) => {
+    try {
+        const { branchId } = req.body;
+
+        if (!branchId) {
+            return res.status(400).json({ error: 'Branch ID is required' });
+        }
+
+        // Check if branch exists
+        const Branch = require('../models/Branch');
+        const branch = await Branch.findById(branchId);
+        if (!branch) {
+            return res.status(400).json({ error: 'Invalid branch' });
+        }
+
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        if (user.isAdmin) {
+            return res.status(400).json({ error: 'Cannot assign branch to admin users' });
+        }
+
+        user.branch = branchId;
+        await user.save();
+
+        res.json({
+            message: 'User branch updated successfully',
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                branch: branchId
+            }
+        });
+    } catch (error) {
+        console.error('Update user branch error:', error);
+        res.status(500).json({ error: 'Failed to update user branch' });
+    }
+});
+
+module.exports = router;

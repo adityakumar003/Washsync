@@ -87,7 +87,7 @@ ${forecast.map((f, i) => `
     `;
 
         // Get AI recommendation
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-002' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
         const prompt = `Based on the following weather data, provide a brief, friendly recommendation (2-3 sentences max) about whether it's a good time to do laundry. Consider drying conditions, rain probability, humidity, and temperature. Be concise and helpful.
 

@@ -1,21 +1,51 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { UserPlus } from 'lucide-react';
+import { branchesAPI } from '@/lib/api';
+import { UserPlus, Building2 } from 'lucide-react';
 
 export default function RegisterPage() {
     const router = useRouter();
     const { register } = useAuth();
-    const [formData, setFormData] = useState({ name: '', email: '', password: '', confirmPassword: '' });
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        branchId: ''
+    });
+    const [branches, setBranches] = useState([]);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [loadingBranches, setLoadingBranches] = useState(true);
+
+    useEffect(() => {
+        fetchBranches();
+    }, []);
+
+    const fetchBranches = async () => {
+        try {
+            const response = await branchesAPI.getActive();
+            setBranches(response.data);
+        } catch (err) {
+            console.error('Failed to fetch branches:', err);
+            setError('Failed to load branches. Please refresh the page.');
+        } finally {
+            setLoadingBranches(false);
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+
+        if (!formData.branchId) {
+            setError('Please select a branch');
+            return;
+        }
 
         if (formData.password !== formData.confirmPassword) {
             setError('Passwords do not match');
@@ -30,7 +60,7 @@ export default function RegisterPage() {
         setLoading(true);
 
         try {
-            await register(formData.name, formData.email, formData.password);
+            await register(formData.name, formData.email, formData.password, formData.branchId);
             router.push('/dashboard');
         } catch (err) {
             setError(err.response?.data?.error || 'Registration failed. Please try again.');
@@ -56,71 +86,103 @@ export default function RegisterPage() {
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Full Name
-                        </label>
-                        <input
-                            type="text"
-                            required
-                            className="input"
-                            placeholder="John Doe"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        />
+                {loadingBranches ? (
+                    <div className="text-center py-8">
+                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                        <p className="text-gray-600 mt-2">Loading branches...</p>
                     </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Email Address
-                        </label>
-                        <input
-                            type="email"
-                            required
-                            className="input"
-                            placeholder="you@example.com"
-                            value={formData.email}
-                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        />
+                ) : branches.length === 0 ? (
+                    <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg mb-4">
+                        <p className="font-medium">No branches available</p>
+                        <p className="text-sm mt-1">Please contact the administrator to create a branch first.</p>
                     </div>
+                ) : (
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <Building2 className="w-4 h-4 inline mr-1" />
+                                Select Branch
+                            </label>
+                            <select
+                                required
+                                className="input"
+                                value={formData.branchId}
+                                onChange={(e) => setFormData({ ...formData, branchId: e.target.value })}
+                            >
+                                <option value="">Choose your branch...</option>
+                                {branches.map((branch) => (
+                                    <option key={branch._id} value={branch._id}>
+                                        {branch.name} - {branch.location}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Password
-                        </label>
-                        <input
-                            type="password"
-                            required
-                            className="input"
-                            placeholder="••••••••"
-                            value={formData.password}
-                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        />
-                    </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Full Name
+                            </label>
+                            <input
+                                type="text"
+                                required
+                                className="input"
+                                placeholder="John Doe"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            />
+                        </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Confirm Password
-                        </label>
-                        <input
-                            type="password"
-                            required
-                            className="input"
-                            placeholder="••••••••"
-                            value={formData.confirmPassword}
-                            onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                        />
-                    </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Email Address
+                            </label>
+                            <input
+                                type="email"
+                                required
+                                className="input"
+                                placeholder="you@example.com"
+                                value={formData.email}
+                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            />
+                        </div>
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="btn btn-primary w-full"
-                    >
-                        {loading ? 'Creating account...' : 'Create Account'}
-                    </button>
-                </form>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Password
+                            </label>
+                            <input
+                                type="password"
+                                required
+                                className="input"
+                                placeholder="••••••••"
+                                value={formData.password}
+                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Confirm Password
+                            </label>
+                            <input
+                                type="password"
+                                required
+                                className="input"
+                                placeholder="••••••••"
+                                value={formData.confirmPassword}
+                                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                            />
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="btn btn-primary w-full"
+                        >
+                            {loading ? 'Creating account...' : 'Create Account'}
+                        </button>
+                    </form>
+                )}
 
                 <div className="mt-6 text-center">
                     <p className="text-gray-600">

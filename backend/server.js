@@ -34,6 +34,7 @@ mongoose.connect(process.env.MONGODB_URI)
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/machines', require('./routes/machines'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/branches', require('./routes/branches'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/weather', require('./routes/weather'));
 

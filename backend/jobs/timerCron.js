@@ -59,8 +59,9 @@ async function checkExpiredTimers() {
 
                 console.log(`[CRON] Notified next user in queue for ${machine.name}`);
 
-                // Note: We don't auto-assign the machine, user must manually occupy it
-                // But we keep them in queue position 1
+                // Remove them from queue since machine is available for them
+                machine.queue.shift();
+                console.log(`[CRON] Removed user from queue for ${machine.name}`);
             }
 
             await machine.save();

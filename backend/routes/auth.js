@@ -7,7 +7,7 @@ const { auth } = require('../middleware/auth');
 // Register new user
 router.post('/register', async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const { name, email, password, branchId } = req.body;
 
         // Validation
         if (!name || !email || !password) {
@@ -18,6 +18,18 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ error: 'Password must be at least 6 characters' });
         }
 
+        // Validate branch if provided (not required for admin)
+        if (branchId) {
+            const Branch = require('../models/Branch');
+            const branch = await Branch.findById(branchId);
+            if (!branch) {
+                return res.status(400).json({ error: 'Invalid branch selected' });
+            }
+            if (!branch.isActive) {
+                return res.status(400).json({ error: 'Selected branch is not active' });
+            }
+        }
+
         // Check if user already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
@@ -25,7 +37,7 @@ router.post('/register', async (req, res) => {
         }
 
         // Create user
-        const user = new User({ name, email, password });
+        const user = new User({ name, email, password, branch: branchId || null });
         await user.save();
 
         // Generate JWT token
@@ -42,7 +54,8 @@ router.post('/register', async (req, res) => {
                 id: user._id,
                 name: user.name,
                 email: user.email,
-                isAdmin: user.isAdmin
+                isAdmin: user.isAdmin,
+                branch: user.branch
             }
         });
     } catch (error) {
@@ -62,7 +75,7 @@ router.post('/login', async (req, res) => {
         }
 
         // Find user
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email }).populate('branch', 'name code');
         if (!user) {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
@@ -87,7 +100,8 @@ router.post('/login', async (req, res) => {
                 id: user._id,
                 name: user.name,
                 email: user.email,
-                isAdmin: user.isAdmin
+                isAdmin: user.isAdmin,
+                branch: user.branch
             }
         });
     } catch (error) {
@@ -104,7 +118,8 @@ router.get('/verify', auth, async (req, res) => {
                 id: req.user._id,
                 name: req.user.name,
                 email: req.user.email,
-                isAdmin: req.user.isAdmin
+                isAdmin: req.user.isAdmin,
+                branch: req.user.branch
             }
         });
     } catch (error) {
