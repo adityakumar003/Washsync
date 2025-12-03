@@ -70,14 +70,14 @@ export default function RegisterPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="min-h-screen flex items-center justify-center p-4 bg-gray-light">
             <div className="card w-full max-w-md fade-in">
                 <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-primary-500 to-primary-700 rounded-full mb-4">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-primary rounded-lg mb-4">
                         <UserPlus className="w-8 h-8 text-white" />
                     </div>
-                    <h1 className="text-3xl font-bold text-gray-800 mb-2">Create Account</h1>
-                    <p className="text-gray-600">Join WashSync to get started</p>
+                    <h1 className="text-3xl font-bold text-slate-dark mb-2">Create Account</h1>
+                    <p className="text-slate-text">Join WashSync to get started</p>
                 </div>
 
                 {error && (
@@ -88,18 +88,18 @@ export default function RegisterPage() {
 
                 {loadingBranches ? (
                     <div className="text-center py-8">
-                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-                        <p className="text-gray-600 mt-2">Loading branches...</p>
+                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-primary"></div>
+                        <p className="text-slate-text mt-2">Loading branches...</p>
                     </div>
                 ) : branches.length === 0 ? (
                     <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg mb-4">
-                        <p className="font-medium">No branches available</p>
+                        <p className="font-semibold">No branches available</p>
                         <p className="text-sm mt-1">Please contact the administrator to create a branch first.</p>
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-semibold text-slate-dark mb-2">
                                 <Building2 className="w-4 h-4 inline mr-1" />
                                 Select Branch
                             </label>
@@ -119,7 +119,7 @@ export default function RegisterPage() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-semibold text-slate-dark mb-2">
                                 Full Name
                             </label>
                             <input
@@ -133,7 +133,7 @@ export default function RegisterPage() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-semibold text-slate-dark mb-2">
                                 Email Address
                             </label>
                             <input
@@ -147,7 +147,7 @@ export default function RegisterPage() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-semibold text-slate-dark mb-2">
                                 Password
                             </label>
                             <input
@@ -161,7 +161,7 @@ export default function RegisterPage() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-semibold text-slate-dark mb-2">
                                 Confirm Password
                             </label>
                             <input
@@ -185,9 +185,9 @@ export default function RegisterPage() {
                 )}
 
                 <div className="mt-6 text-center">
-                    <p className="text-gray-600">
+                    <p className="text-slate-text">
                         Already have an account?{' '}
-                        <Link href="/login" className="text-primary-600 hover:text-primary-700 font-medium">
+                        <Link href="/login" className="text-blue-primary hover:text-blue-hover font-semibold">
                             Sign in here
                         </Link>
                     </p>

@@ -102,11 +102,11 @@ export default function MachineCard({ machine, machines, onUpdate }) {
     const getStatusColor = () => {
         switch (machine.status) {
             case 'Available':
-                return 'bg-green-500';
+                return 'bg-success';
             case 'InUse':
-                return 'bg-yellow-500';
+                return 'bg-warning';
             case 'Maintenance':
-                return 'bg-gray-500';
+                return 'bg-maintenance';
             default:
                 return 'bg-gray-400';
         }
@@ -126,11 +126,11 @@ export default function MachineCard({ machine, machines, onUpdate }) {
     };
 
     return (
-        <div className="card hover:scale-105 transition-transform duration-300">
+        <div className="card hover:shadow-lg transition-all duration-300">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-gray-800">{machine.name}</h3>
-                <div className={`w-4 h-4 rounded-full ${getStatusColor()} pulse-glow`}></div>
+                <h3 className="text-xl font-bold text-slate-dark">{machine.name}</h3>
+                <div className={`w-3 h-3 rounded-full ${getStatusColor()}`}></div>
             </div>
 
             {/* Status Badge */}
@@ -142,9 +142,9 @@ export default function MachineCard({ machine, machines, onUpdate }) {
 
             {/* Current User */}
             {machine.currentUser && (
-                <div className="flex items-center gap-2 mb-3 text-gray-700">
+                <div className="flex items-center gap-2 mb-3 text-slate-medium">
                     <User className="w-4 h-4" />
-                    <span className="text-sm">
+                    <span className="text-sm font-medium">
                         {isCurrentUser ? 'You' : machine.currentUser.name}
                     </span>
                 </div>
@@ -152,13 +152,13 @@ export default function MachineCard({ machine, machines, onUpdate }) {
 
             {/* Timer */}
             {machine.status === 'InUse' && machine.timerEnd && (
-                <div className="bg-gradient-to-r from-primary-50 to-primary-100 rounded-lg p-4 mb-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <Clock className="w-5 h-5 text-primary-600" />
-                            <span className="text-sm font-medium text-primary-900">Time Remaining</span>
+                            <Clock className="w-5 h-5 text-blue-primary" />
+                            <span className="text-sm font-semibold text-slate-dark">Time Remaining</span>
                         </div>
-                        <span className="text-2xl font-bold text-primary-700">
+                        <span className="text-2xl font-bold text-blue-primary">
                             {formatTime(timeRemaining)}
                         </span>
                     </div>
@@ -169,8 +169,8 @@ export default function MachineCard({ machine, machines, onUpdate }) {
             {machine.queue && machine.queue.length > 0 && (
                 <div className="mb-4">
                     <div className="flex items-center gap-2 mb-2">
-                        <Users className="w-4 h-4 text-gray-600" />
-                        <span className="text-sm font-medium text-gray-700">
+                        <Users className="w-4 h-4 text-slate-text" />
+                        <span className="text-sm font-semibold text-slate-dark">
                             Queue ({machine.queue.length})
                         </span>
                     </div>
@@ -179,8 +179,8 @@ export default function MachineCard({ machine, machines, onUpdate }) {
                             <div
                                 key={item.user._id}
                                 className={`text-sm px-3 py-2 rounded ${item.user._id === user?.id
-                                    ? 'bg-primary-100 text-primary-800 font-medium'
-                                    : 'bg-gray-100 text-gray-700'
+                                    ? 'bg-blue-50 text-blue-primary font-semibold border border-blue-200'
+                                    : 'bg-gray-100 text-slate-medium'
                                     }`}
                             >
                                 {index + 1}. {item.user._id === user?.id ? 'You' : item.user.name}
@@ -271,7 +271,7 @@ export default function MachineCard({ machine, machines, onUpdate }) {
                 )}
 
                 {machine.status === 'Maintenance' && (
-                    <div className="text-center text-sm text-gray-600 py-2">
+                    <div className="text-center text-sm text-slate-text py-2">
                         Under Maintenance
                     </div>
                 )}

@@ -119,16 +119,16 @@ export default function NotificationCenter() {
                         className="fixed inset-0 z-40"
                         onClick={() => setIsOpen(false)}
                     ></div>
-                    <div className="absolute right-0 mt-2 w-80 glass rounded-xl shadow-2xl z-50 max-h-96 overflow-hidden fade-in">
+                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-border z-50 max-h-96 overflow-hidden fade-in">
                         {/* Header */}
-                        <div className="p-4 border-b border-gray-200">
+                        <div className="p-4 border-b border-gray-border">
                             <div className="flex items-center justify-between">
-                                <h3 className="font-bold text-gray-800">Notifications</h3>
+                                <h3 className="font-bold text-slate-dark">Notifications</h3>
                                 {unreadCount > 0 && (
                                     <button
                                         onClick={handleMarkAllAsRead}
                                         disabled={loading}
-                                        className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
+                                        className="text-xs text-blue-primary hover:text-blue-hover font-semibold flex items-center gap-1"
                                     >
                                         <CheckCheck className="w-4 h-4" />
                                         Mark all read
@@ -140,31 +140,31 @@ export default function NotificationCenter() {
                         {/* Notifications List */}
                         <div className="overflow-y-auto max-h-80">
                             {notifications.length === 0 ? (
-                                <div className="p-8 text-center text-gray-500">
+                                <div className="p-8 text-center text-slate-text">
                                     <Bell className="w-12 h-12 mx-auto mb-2 opacity-30" />
                                     <p>No notifications yet</p>
                                 </div>
                             ) : (
-                                <div className="divide-y divide-gray-100">
+                                <div className="divide-y divide-gray-border">
                                     {notifications.map((notification) => (
                                         <div
                                             key={notification._id}
-                                            className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${!notification.read ? 'bg-primary-50' : ''
+                                            className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${!notification.read ? 'bg-blue-50 border-l-4 border-blue-primary' : ''
                                                 }`}
                                             onClick={() => !notification.read && handleMarkAsRead(notification._id)}
                                         >
                                             <div className="flex gap-3">
                                                 <span className="text-2xl">{getNotificationIcon(notification.type)}</span>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className={`text-sm ${!notification.read ? 'font-medium text-gray-900' : 'text-gray-700'}`}>
+                                                    <p className={`text-sm ${!notification.read ? 'font-semibold text-slate-dark' : 'text-slate-medium'}`}>
                                                         {notification.message}
                                                     </p>
-                                                    <p className="text-xs text-gray-500 mt-1">
+                                                    <p className="text-xs text-slate-text mt-1">
                                                         {formatTime(notification.createdAt)}
                                                     </p>
                                                 </div>
                                                 {!notification.read && (
-                                                    <div className="w-2 h-2 bg-primary-500 rounded-full mt-2"></div>
+                                                    <div className="w-2 h-2 bg-blue-primary rounded-full mt-2"></div>
                                                 )}
                                             </div>
                                         </div>

@@ -43,23 +43,23 @@ export default function DashboardPage() {
 
     if (authLoading || loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Loader className="w-12 h-12 text-white animate-spin" />
+            <div className="min-h-screen flex items-center justify-center bg-gray-light">
+                <Loader className="w-12 h-12 text-blue-primary animate-spin" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen">
-            {/* Header */}
-            <header className="glass-dark sticky top-0 z-30 shadow-lg">
+        <div className="min-h-screen bg-gray-light">
+            {/* Header - Dark Slate */}
+            <header className="bg-slate-dark sticky top-0 z-30 shadow-lg">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
                         <div>
                             <h1 className="text-2xl font-bold text-white">WashSync</h1>
                             <p className="text-sm text-gray-300">
                                 Welcome, {user?.name}
-                                {user?.isAdmin && <span className="ml-2 text-yellow-400">👑 Admin</span>}
+                                {user?.isAdmin && <span className="ml-2 text-warning">👑 Admin</span>}
                             </p>
                         </div>
 
@@ -67,7 +67,7 @@ export default function DashboardPage() {
                             <button
                                 onClick={handleRefresh}
                                 disabled={refreshing}
-                                className="p-2 rounded-full hover:bg-white/20 transition-colors"
+                                className="p-2 rounded-lg hover:bg-white/10 transition-colors"
                                 title="Refresh"
                             >
                                 <RefreshCw className={`w-5 h-5 text-white ${refreshing ? 'animate-spin' : ''}`} />
@@ -78,7 +78,7 @@ export default function DashboardPage() {
                             {user?.isAdmin && (
                                 <button
                                     onClick={() => router.push('/admin')}
-                                    className="p-2 rounded-full hover:bg-white/20 transition-colors"
+                                    className="p-2 rounded-lg hover:bg-white/10 transition-colors"
                                     title="Admin Panel"
                                 >
                                     <Settings className="w-5 h-5 text-white" />
@@ -87,7 +87,7 @@ export default function DashboardPage() {
 
                             <button
                                 onClick={logout}
-                                className="p-2 rounded-full hover:bg-white/20 transition-colors"
+                                className="p-2 rounded-lg hover:bg-white/10 transition-colors"
                                 title="Logout"
                             >
                                 <LogOut className="w-5 h-5 text-white" />
@@ -103,15 +103,15 @@ export default function DashboardPage() {
                     {/* Left Column - Machines */}
                     <div className="lg:col-span-2">
                         <div className="mb-6">
-                            <h2 className="text-2xl font-bold text-white mb-2">Washing Machines</h2>
-                            <p className="text-gray-200">
+                            <h2 className="text-3xl font-bold text-slate-dark mb-2">Washing Machines</h2>
+                            <p className="text-slate-text">
                                 {machines.filter(m => m.status === 'Available').length} available out of {machines.length} machines
                             </p>
                         </div>
 
                         {machines.length === 0 ? (
                             <div className="card text-center py-12">
-                                <p className="text-gray-600 text-lg">No machines available yet.</p>
+                                <p className="text-slate-text text-lg">No machines available yet.</p>
                                 {user?.isAdmin && (
                                     <button
                                         onClick={() => router.push('/admin')}

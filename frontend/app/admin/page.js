@@ -129,24 +129,39 @@ export default function AdminPage() {
         }
     };
 
+    const handleUserBranchChange = async (userId, branchId, userName) => {
+        if (!branchId) {
+            alert('Please select a branch');
+            return;
+        }
+
+        try {
+            await adminAPI.assignUserBranch(userId, branchId);
+            alert(`Successfully reassigned ${userName} to new branch`);
+            fetchData();
+        } catch (error) {
+            alert(error.response?.data?.error || 'Failed to reassign user');
+        }
+    };
+
     if (authLoading || loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Loader className="w-12 h-12 text-white animate-spin" />
+            <div className="min-h-screen flex items-center justify-center bg-gray-light">
+                <Loader className="w-12 h-12 text-blue-primary animate-spin" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen">
+        <div className="min-h-screen bg-gray-light">
             {/* Header */}
-            <header className="glass-dark sticky top-0 z-30 shadow-lg">
+            <header className="bg-slate-dark sticky top-0 z-30 shadow-lg">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
                         <div className="flex items-center gap-4">
                             <button
                                 onClick={() => router.push('/dashboard')}
-                                className="p-2 rounded-full hover:bg-white/20 transition-colors"
+                                className="p-2 rounded-lg hover:bg-white/10 transition-colors"
                             >
                                 <ArrowLeft className="w-5 h-5 text-white" />
                             </button>
@@ -167,9 +182,9 @@ export default function AdminPage() {
                 <div className="flex gap-4 mb-6">
                     <button
                         onClick={() => setActiveTab('machines')}
-                        className={`px-6 py-3 rounded-lg font-medium transition-all ${activeTab === 'machines'
-                                ? 'bg-primary-600 text-white shadow-lg'
-                                : 'bg-white/10 text-white hover:bg-white/20'
+                        className={`px-6 py-3 rounded-lg font-semibold transition-all ${activeTab === 'machines'
+                            ? 'bg-blue-primary text-white shadow-md'
+                            : 'bg-white text-slate-medium hover:bg-gray-100 border border-gray-border'
                             }`}
                     >
                         <Wrench className="w-5 h-5 inline mr-2" />
@@ -177,9 +192,9 @@ export default function AdminPage() {
                     </button>
                     <button
                         onClick={() => setActiveTab('branches')}
-                        className={`px-6 py-3 rounded-lg font-medium transition-all ${activeTab === 'branches'
-                                ? 'bg-primary-600 text-white shadow-lg'
-                                : 'bg-white/10 text-white hover:bg-white/20'
+                        className={`px-6 py-3 rounded-lg font-semibold transition-all ${activeTab === 'branches'
+                            ? 'bg-blue-primary text-white shadow-md'
+                            : 'bg-white text-slate-medium hover:bg-gray-100 border border-gray-border'
                             }`}
                     >
                         <Building2 className="w-5 h-5 inline mr-2" />
@@ -193,7 +208,7 @@ export default function AdminPage() {
                         {activeTab === 'machines' ? (
                             <div className="card mb-6">
                                 <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-2xl font-bold text-gray-800">Machines</h2>
+                                    <h2 className="text-2xl font-bold text-slate-dark">Machines</h2>
                                     <button
                                         onClick={() => setShowAddForm(!showAddForm)}
                                         className="btn btn-primary text-sm"
@@ -340,7 +355,7 @@ export default function AdminPage() {
                         ) : (
                             <div className="card mb-6">
                                 <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-2xl font-bold text-gray-800">Branches</h2>
+                                    <h2 className="text-2xl font-bold text-slate-dark">Branches</h2>
                                     <button
                                         onClick={() => setShowBranchForm(!showBranchForm)}
                                         className="btn btn-primary text-sm"
@@ -472,7 +487,7 @@ export default function AdminPage() {
                     {/* Users List */}
                     <div className="lg:col-span-1">
                         <div className="card sticky top-24">
-                            <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <h2 className="text-2xl font-bold text-slate-dark mb-4 flex items-center gap-2">
                                 <Users className="w-6 h-6" />
                                 Users ({users.length})
                             </h2>
@@ -481,18 +496,42 @@ export default function AdminPage() {
                                 {users.map((u) => (
                                     <div
                                         key={u._id}
-                                        className="p-3 bg-gray-50 rounded-lg"
+                                        className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                                     >
                                         <div className="font-medium text-gray-800 flex items-center gap-2">
                                             {u.name}
                                             {u.isAdmin && <span className="text-yellow-500">👑</span>}
                                         </div>
                                         <div className="text-sm text-gray-600">{u.email}</div>
-                                        {u.branch && (
-                                            <div className="text-xs text-blue-600 mt-1">
-                                                📍 {u.branch.name}
+
+                                        {/* Branch Assignment */}
+                                        {!u.isAdmin && (
+                                            <div className="mt-2">
+                                                <label className="text-xs text-gray-500 block mb-1">
+                                                    Branch Assignment
+                                                </label>
+                                                <select
+                                                    value={u.branch?._id || ''}
+                                                    onChange={(e) => handleUserBranchChange(u._id, e.target.value, u.name)}
+                                                    className="w-full text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    disabled={branches.length === 0}
+                                                >
+                                                    <option value="">No Branch</option>
+                                                    {branches.map((branch) => (
+                                                        <option key={branch._id} value={branch._id}>
+                                                            {branch.name} ({branch.code})
+                                                        </option>
+                                                    ))}
+                                                </select>
                                             </div>
                                         )}
+
+                                        {u.isAdmin && (
+                                            <div className="text-xs text-gray-500 mt-2 italic">
+                                                Admin users are not assigned to branches
+                                            </div>
+                                        )}
+
                                         <div className="text-xs text-gray-500 mt-1">
                                             Joined: {new Date(u.createdAt).toLocaleDateString()}
                                         </div>

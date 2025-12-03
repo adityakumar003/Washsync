@@ -29,14 +29,14 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="min-h-screen flex items-center justify-center p-4 bg-gray-light">
             <div className="card w-full max-w-md fade-in">
                 <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-primary-500 to-primary-700 rounded-full mb-4">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-primary rounded-lg mb-4">
                         <LogIn className="w-8 h-8 text-white" />
                     </div>
-                    <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome to WashSync</h1>
-                    <p className="text-gray-600">Sign in to manage your washing machines</p>
+                    <h1 className="text-3xl font-bold text-slate-dark mb-2">Welcome to WashSync</h1>
+                    <p className="text-slate-text">Sign in to manage your washing machines</p>
                 </div>
 
                 {error && (
@@ -47,7 +47,7 @@ export default function LoginPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-semibold text-slate-dark mb-2">
                             Email Address
                         </label>
                         <input
@@ -61,7 +61,7 @@ export default function LoginPage() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-semibold text-slate-dark mb-2">
                             Password
                         </label>
                         <input
@@ -84,9 +84,9 @@ export default function LoginPage() {
                 </form>
 
                 <div className="mt-6 text-center">
-                    <p className="text-gray-600">
+                    <p className="text-slate-text">
                         Don't have an account?{' '}
-                        <Link href="/register" className="text-primary-600 hover:text-primary-700 font-medium">
+                        <Link href="/register" className="text-blue-primary hover:text-blue-hover font-semibold">
                             Register here
                         </Link>
                     </p>
