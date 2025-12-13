@@ -23,7 +23,7 @@ export default function AdminPage() {
     useEffect(() => {
         if (!authLoading) {
             if (!user) {
-                router.push('/login');
+                router.push('/auth');
             } else if (!user.isAdmin) {
                 router.push('/dashboard');
             } else {

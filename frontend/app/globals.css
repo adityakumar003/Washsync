@@ -110,6 +110,11 @@ a {
   @apply w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-600 focus:ring-opacity-20 outline-none transition-all duration-200;
 }
 
+/* Auth page specific input */
+.auth-input {
+  @apply w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 outline-none transition-all duration-200 text-gray-900 placeholder-gray-400;
+}
+
 /* Animations */
 @keyframes fadeIn {
   from {

@@ -18,7 +18,7 @@ export default function DashboardPage() {
 
     useEffect(() => {
         if (!authLoading && !user) {
-            router.push('/login');
+            router.push('/auth');
         } else if (user) {
             fetchMachines();
         }
