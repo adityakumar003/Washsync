@@ -15,6 +15,12 @@ export function AuthProvider({ children }) {
 
     const checkAuth = async () => {
         try {
+            // Check if we're in the browser before accessing localStorage
+            if (typeof window === 'undefined') {
+                setLoading(false);
+                return;
+            }
+
             const token = localStorage.getItem('token');
             if (!token) {
                 setLoading(false);
@@ -55,10 +61,12 @@ export function AuthProvider({ children }) {
     };
 
     const logout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setUser(null);
-        window.location.href = '/landing';
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            setUser(null);
+            window.location.href = '/landing';
+        }
     };
 
     return (

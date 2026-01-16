@@ -21,7 +21,7 @@ function AuthContent() {
         if (tab === 'signup') {
             setActiveTab('signup');
         }
-    }, [searchParams]);
+    }, [searchParams]);//edited
 
     // Login state
     const [loginData, setLoginData] = useState({ email: '', password: '' });
