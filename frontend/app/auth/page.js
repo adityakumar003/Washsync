@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { branchesAPI } from '@/lib/api';
 import { Sparkles, Star, Eye, EyeOff } from 'lucide-react';
 
-export default function AuthPage() {
+export const dynamic = 'force-dynamic';
+
+function AuthContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { login, register } = useAuth();
@@ -430,5 +432,17 @@ export default function AuthPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function AuthPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-slate-50">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+        }>
+            <AuthContent />
+        </Suspense>
     );
 }
