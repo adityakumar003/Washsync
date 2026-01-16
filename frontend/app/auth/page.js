@@ -15,8 +15,13 @@ function AuthContent() {
     const { login, register } = useAuth();
 
     // Determine initial tab from URL or default to login
-    const initialTab = searchParams.get('tab') === 'signup' ? 'signup' : 'login';
-    const [activeTab, setActiveTab] = useState(initialTab);
+    const [activeTab, setActiveTab] = useState('login');
+    useEffect(() => {
+        const tab = searchParams.get('tab');
+        if (tab === 'signup') {
+            setActiveTab('signup');
+        }
+    }, [searchParams]);
 
     // Login state
     const [loginData, setLoginData] = useState({ email: '', password: '' });
