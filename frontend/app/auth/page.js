@@ -51,6 +51,12 @@ function AuthContent() {
 
     const fetchBranches = async () => {
         try {
+            // Only fetch branches in the browser, not during SSR
+            if (typeof window === 'undefined') {
+                setLoadingBranches(false);
+                return;
+            }
+
             const response = await branchesAPI.getActive();
             setBranches(response.data);
         } catch (err) {
